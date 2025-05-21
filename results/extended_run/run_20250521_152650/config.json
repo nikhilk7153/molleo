@@ -1,0 +1,10 @@
+{
+  "initial_pool": "results/run_20250521_143105/best_pool.pkl",
+  "iterations": 10,
+  "m": 100,
+  "reward": "qed",
+  "vllm_endpoint": "http://0.0.0.0:8000/generate",
+  "output_dir": "results/extended_run",
+  "sample_method": "exp",
+  "timestamp": "20250521_152650"
+}

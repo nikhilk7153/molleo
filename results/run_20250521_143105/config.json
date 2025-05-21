@@ -1,0 +1,10 @@
+{
+  "initial_pool": "candidate_pool.pkl",
+  "iterations": 3,
+  "m": 100,
+  "reward": "qed",
+  "vllm_endpoint": "http://0.0.0.0:8000/generate",
+  "output_dir": "results",
+  "sample_method": "exp",
+  "timestamp": "20250521_143105"
+}

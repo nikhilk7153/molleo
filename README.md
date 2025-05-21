@@ -1,72 +1,158 @@
-# MolLEO
+# Molecular RL with Large Language Models
 
-[arXiv] [Efficient Evolutionary Search Over Chemical Space with Large Language Models](https://arxiv.org/abs/2406.16976)
+This repository contains a set of scripts for using large language models (LLMs) to generate and optimize molecules through reinforcement learning.
 
-[Website] [MolLEO Project](https://molleo.github.io/)
+## Overview
 
-## About
+The process works in three main steps:
 
-MolLEO is an LLM-augmented evlotuionary algorithm for molecular discovery!
+1. **Initialize a candidate pool**: Randomly sample molecules from ZINC database
+2. **Run iterations**: For each iteration:
+   - Sample molecules from the pool
+   - Score them with reward oracles
+   - Prompt LLM to generate improved molecules based on examples
+   - Calculate rewards and update the pool
+3. **Track performance**: Record and plot performance metrics across iterations
 
-![image](images/README/molleo_overview.gif)
+## Scripts
 
-## Setups
-You need to get an OpenAI API key for GPT-4. BioT5 is an open-source language model which can work on either GPU or CPU. Currently, this code repo does not support MolLEO(MOLSTM), but we will update soon.
+- `initialize_pool.py`: Create an initial pool of molecules from ZINC database
+- `run_iteration.py`: Run a single iteration of the RL algorithm
+- `run_multi_iterations.py`: Run multiple iterations and track performance
+- `vllm_server.py`: Helper script to start a VLLM server with Qwen or other models
 
-### Package Installation
-```bash
-conda create -n molleo python=3.9
-conda activate molleo
-conda install pytorch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 pytorch-cuda=12.1 -c pytorch -c nvidia
-pip install PyTDC 
-pip install PyYAML
-pip install rdkit
-pip install transformers
-pip install sentencepiece
-pip install selfies
-```
+## Requirements
 
-Then we can activate conda via following command. 
-```bash
-conda activate molleo 
-```
+- Python 3.7+
+- RDKit
+- TDC (Therapeutics Data Commons)
+- Qwen2-7B-Instruct model hosted on VLLM
+- NumPy, Matplotlib
+- Pickle
+- Requests
 
-
-### Experiments
-The experiments are conducted on the following categories: `single obejective optimization` and `multi objective optimization`.
-
-To run experiments on single objective optimization task:
+## Installation
 
 ```bash
-cd single_objective
-# BioT5 on jnk3 task
-python run.py molleo --mol_lm BioT5 --oracles jnk3 --seed 1 2 3
-# GPT-4 on gsk3b task
-python run.py molleo --mol_lm GPT-4 --oracles gsk3b --seed 1 2 3
+# Clone the repository
+git clone <repository_url>
+cd <repository_directory>
+
+# Install the dependencies
+pip install rdkit tdc numpy matplotlib requests
 ```
-To run experiments on multi objective optimization task:
+
+## VLLM Setup for Qwen Models
+
+To set up VLLM with Qwen2-7B-Instruct:
+
+1. **Get a HuggingFace Token**:
+   - Create an account on [HuggingFace](https://huggingface.co)
+   - Visit [Qwen/Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct) and accept the terms of use
+   - Generate an access token at https://huggingface.co/settings/tokens
+
+2. **Start the VLLM server**:
+   ```bash
+   python vllm_server.py --hf-token YOUR_HUGGINGFACE_TOKEN --trust-remote-code
+   ```
+
+3. **Alternative models**:
+   If you're having issues with Qwen models, you can use other models:
+   ```bash
+   # List available models
+   python vllm_server.py --list-models
+   
+   # Use Mistral model instead
+   python vllm_server.py --model mistralai/Mistral-7B-Instruct-v0.2 --trust-remote-code
+   ```
+
+Your VLLM endpoint will be `http://localhost:8000/generate` or replace with your server's address.
+
+## Usage
+
+### 1. Initialize a Candidate Pool
 
 ```bash
-cd multi_objective
-# objective summation on task 1
-python run.py molleo_multi --mol_lm BioT5 --min_obj sa --max_obj jnk3 qed --seed 1 2 3
-# pareto optimal set selection on task 2
-python run.py molleo_multi_pareto --mol_lm GPT-4 --min_obj sa --max_obj gsk3b qed --seed 1 2 3
-# pareto optimal set selection on task 3
-python run.py molleo_multi_pareto --mol_lm GPT-4 --min_obj sa gsk3b drd2 --max_obj jnk3 qed --seed 1 2 3
+python initialize_pool.py --n 1000 --seed 42 --output candidate_pool.pkl
 ```
 
-## Citation
-If you find our work helpful, please consider citing our paper:
+Options:
+- `--n`: Number of molecules to sample (default: 1000)
+- `--seed`: Random seed for reproducibility (default: 42)
+- `--output`: Output file to save candidate pool (default: candidate_pool.pkl)
 
+### 2. Run a Single Iteration
+
+```bash
+python run_iteration.py --pool candidate_pool.pkl --m 10 --reward qed --vllm_endpoint http://localhost:8000/generate
 ```
-@misc{wang2024efficientevolutionarysearchchemical,
-      title={Efficient Evolutionary Search Over Chemical Space with Large Language Models}, 
-      author={Haorui Wang and Marta Skreta and Cher-Tian Ser and Wenhao Gao and Lingkai Kong and Felix Streith-Kalthoff and Chenru Duan and Yuchen Zhuang and Yue Yu and Yanqiao Zhu and Yuanqi Du and Alán Aspuru-Guzik and Kirill Neklyudov and Chao Zhang},
-      year={2024},
-      eprint={2406.16976},
-      archivePrefix={arXiv},
-      primaryClass={cs.NE}
-      url={https://arxiv.org/abs/2406.16976}, 
-}
+
+Options:
+- `--pool`: Path to candidate pool pickle file
+- `--m`: Number of positive/negative samples (default: 10)
+- `--reward`: Reward function to use (default: qed)
+- `--vllm_endpoint`: VLLM API endpoint for the model
+- `--output`: Output file for updated pool (default: auto-generated)
+- `--sample_method`: Method for sampling from the pool (uniform or exp, default: exp)
+
+### 3. Run Multiple Iterations
+
+```bash
+python run_multi_iterations.py --initial_pool candidate_pool.pkl --iterations 5 --m 10 --reward qed --vllm_endpoint http://localhost:8000/generate
 ```
+
+Options:
+- `--initial_pool`: Path to initial candidate pool pickle file
+- `--iterations`: Number of iterations to run (default: 5)
+- `--m`: Number of positive/negative samples per iteration (default: 10)
+- `--reward`: Reward function to use (default: qed)
+- `--vllm_endpoint`: VLLM API endpoint for the model
+- `--output_dir`: Directory to save results (default: results)
+- `--sample_method`: Method for sampling from the pool (uniform or exp, default: exp)
+
+## Reward Functions
+
+Available reward functions from TDC Oracle:
+- `qed`: Quantitative Estimate of Drug-likeness
+- `sa`: Synthetic Accessibility
+- `jnk3`: JNK3 inhibition
+- `gsk3b`: GSK3Beta inhibition
+- `drd2`: DRD2 inhibition
+
+## Example Workflow
+
+```bash
+# Step 1: Initialize a pool of 1000 molecules
+python initialize_pool.py --n 1000 --output candidate_pool.pkl
+
+# Step 2: Start the VLLM server with your HuggingFace token
+python vllm_server.py --hf-token YOUR_HUGGINGFACE_TOKEN --trust-remote-code
+
+# Step 3: Run 5 iterations of the RL algorithm
+python run_multi_iterations.py --initial_pool candidate_pool.pkl --iterations 5 --reward qed --vllm_endpoint http://localhost:8000/generate --output_dir results
+```
+
+## Troubleshooting
+
+If you encounter issues with the Qwen model:
+
+1. **Authentication errors**: Make sure you've accepted the model's terms of use on HuggingFace and provided a valid token
+2. **Model not found**: Check the correct model name using `--list-models` flag
+3. **Memory issues**: Reduce `--gpu-memory-utilization` to 0.7 or lower
+4. **Alternative models**: Try other models like Mistral-7B-Instruct-v0.2 which may have fewer access restrictions
+
+## Results
+
+The results will be saved in the specified output directory:
+- Pickle files for each iteration's candidate pool
+- JSON file with rewards for each iteration
+- Plot of rewards over iterations
+- Symlink to the best performing pool
+
+## License
+
+[License information]
+
+## Acknowledgements
+
+This work builds on the MolLEO framework and utilizes open-source LLMs hosted on VLLM for molecule generation.

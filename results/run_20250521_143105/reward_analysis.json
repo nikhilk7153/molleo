@@ -1,0 +1,34 @@
+[
+  {
+    "pool_size": 10000,
+    "max_reward": 0.9471813204885318,
+    "mean_reward": 0.7343006002768255,
+    "diversity": 0.8705936431552153
+  },
+  {
+    "pool_size": 10004,
+    "max_reward": 0.9471813204885318,
+    "mean_reward": 0.7342872514855514,
+    "diversity": 0.8705964772409694,
+    "new_molecules": 4,
+    "max_improvement": 0,
+    "mean_improvement": 0,
+    "diversity_of_new": 0.8400194855540933,
+    "total_reward": 0.16800389711081867,
+    "max_reward_new": 0.936090770057328,
+    "mean_reward_new": 0.700915273300442
+  },
+  {
+    "pool_size": 10006,
+    "max_reward": 0.9471813204885318,
+    "mean_reward": 0.7343198604499557,
+    "diversity": 0.8705835341709879,
+    "new_molecules": 2,
+    "max_improvement": 0,
+    "mean_improvement": 0.16314264891480135,
+    "diversity_of_new": 0.8421052631578947,
+    "total_reward": 0.21736384730601935,
+    "max_reward_new": 0.90904471270419,
+    "mean_reward_new": 0.8974299004003528
+  }
+]

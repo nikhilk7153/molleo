@@ -110,6 +110,71 @@ Options:
 - `--output_dir`: Directory to save results (default: results)
 - `--sample_method`: Method for sampling from the pool (uniform or exp, default: exp)
 
+### 4. Single-Objective Pipeline with Optional DPO
+
+```bash
+python single_objective/pipeline.py --n 1000 --iterations 3 --m 10 --reward qed \
+    --vllm_endpoint http://localhost:8000/generate --output_dir single_output
+```
+
+Add `--dpo` to perform Direct Preference Optimization fine-tuning after the search.
+
+The RL reward combines the improvement in maximum and mean rewards of the newly
+generated molecules compared to the positive samples along with their diversity:
+
+```
+reward = alpha * (new_reward_max - positive_reward_max)
+         + beta * (new_reward_mean - positive_reward_mean)
+         + gamma * diversity(new_samples)
+```
+
+### 5. Multi-Objective Pipeline with Optional DPO
+
+```bash
+python multi_objective/pipeline.py --n 1000 --iterations 3 --m 10 \
+    --max_obj jnk3 qed --min_obj sa \
+    --vllm_endpoint http://localhost:8000/generate --output_dir multi_output
+```
+
+This variant accepts multiple objectives to maximize (`--max_obj`) and minimize
+(`--min_obj`). Use `--dpo` to fine-tune the model with preference pairs after the
+search completes.
+
+### 6. Compute Metrics for a Run
+
+After running the optimization pipelines, use `compute_metrics.py` to calculate
+the evaluation metrics reported in the MolLEO paper. For single-objective runs
+provide the reward name:
+
+```bash
+python compute_metrics.py --run_dir results/run_XXXX --reward qed
+```
+
+For multi-objective runs specify the objectives to maximize and minimize:
+
+```bash
+python compute_metrics.py --run_dir multi_output --max_obj jnk3 qed --min_obj sa
+```
+
+The script outputs the top‑10 AUC and final statistics for single-objective
+runs or the summed AUC, hypervolume and diversity metrics for multi-objective
+runs. Use `--output metrics.json` to save the values to a file.
+
+### 7. RLVR Training
+
+`rlvr_train.py` implements reinforcement learning with variance reduction. It
+attaches a small value head to the language model and updates the model using
+an actor–critic objective. Rewards are computed using the same formula as the
+single-objective pipeline.
+
+```bash
+python rlvr_train.py --pool candidate_pool.pkl --model Qwen/Qwen2-7B-Instruct \
+    --vllm_endpoint http://localhost:8000/generate
+```
+
+The script saves the fine‑tuned model and value head to the `rlvr_model/`
+directory.
+
 ## Reward Functions
 
 Available reward functions from TDC Oracle:

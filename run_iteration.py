@@ -297,9 +297,13 @@ def calculate_rl_reward(new_samples_rewards, positive_samples, diversity_value, 
     # Get rewards from positive samples
     positive_rewards = [r for _, r in positive_samples]
     
-    # Calculate components
-    reward_max_improvement = max(0, max(new_samples_rewards, default=0) - max(positive_rewards, default=0))
-    reward_mean_improvement = max(0, np.mean(new_samples_rewards) - np.mean(positive_rewards) if new_samples_rewards else 0)
+    # Calculate components directly as differences
+    reward_max_improvement = max(new_samples_rewards, default=0) - max(positive_rewards, default=0)
+    reward_mean_improvement = (
+        np.mean(new_samples_rewards) - np.mean(positive_rewards)
+        if new_samples_rewards
+        else 0.0
+    )
     
     # Calculate total reward
     total_reward = (alpha * reward_max_improvement + 

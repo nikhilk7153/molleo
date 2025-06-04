@@ -175,6 +175,19 @@ python rlvr_train.py --pool candidate_pool.pkl --model Qwen/Qwen2-7B-Instruct \
 The script saves the fine‑tuned model and value head to the `rlvr_model/`
 directory.
 
+### 8. GRPO Training (RLVR + DPO)
+
+`grpo_train.py` runs an RLVR loop and then fine‑tunes the model with Direct
+Preference Optimization. This produces a policy optimized with variance
+reduction and preference learning.
+
+```bash
+python grpo_train.py --pool candidate_pool.pkl --model Qwen/Qwen2-7B-Instruct \
+    --vllm_endpoint http://localhost:8000/generate
+```
+
+The resulting model is stored in `grpo_model/`.
+
 ## Reward Functions
 
 Available reward functions from TDC Oracle:
@@ -213,6 +226,20 @@ The results will be saved in the specified output directory:
 - JSON file with rewards for each iteration
 - Plot of rewards over iterations
 - Symlink to the best performing pool
+
+## 9. Training with verl
+
+Experimental support for the [verl](https://github.com/volcengine/verl) library
+is provided via the `verl_train.py` script. After installing `verl` you can fine
+tune a model using PPO:
+
+```bash
+pip install verl
+python verl_train.py --model Qwen/Qwen2.5-0.5B-Instruct --n 1000 --output_dir verl_output
+```
+
+This converts a candidate pool into a simple verl dataset and launches
+`verl.trainer.main_ppo` with the custom reward defined in `verl_reward.py`.
 
 ## License
 
